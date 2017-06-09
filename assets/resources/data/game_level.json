@@ -1,0 +1,14 @@
+[
+	{
+		"id":0,
+		"symbol":"symbol_1",
+		"ui":"ui_1",
+		"line":9
+	},
+	{
+		"id":1,
+		"symbol":"symbol_2",
+		"ui":"ui_2",
+		"line":15
+	}
+]
