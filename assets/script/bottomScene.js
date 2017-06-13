@@ -40,6 +40,7 @@ cc.Class({
         cc.log("start game!");
         this.main.jackpot.getComponent("slotScene").startSlots();
         this.changeState(1);
+        this.stop_btn.node.on("click",this.stopSpin,this);
     },
     autoCallBack:function(){
         if(this.auto_show){
@@ -107,6 +108,10 @@ cc.Class({
         this.stop_btn.node.off("click",this.stopAuto,this);
         cacheManager.auto_times = 0;
         this.main.jackpot.getComponent("slotScene").clearAuto();
+    },
+    stopSpin:function(){
+        this.stop_btn.node.off("click",this.stopSpin,this);
+        this.main.jackpot.getComponent("slotScene").fastStop();
     },
     updatePlayer:function(){
         var playerInfo = cacheManager.playerInfo;

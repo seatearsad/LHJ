@@ -27,6 +27,9 @@ cc.Class({
         //控制自动旋转的参数
         this.isAuto = false;
         this.total_time = 0;
+
+        //当前已经停止列数
+        this.curr_stop_col = 0;
     },
     emptyFunc:function (event) {
         event.stopPropagation();
@@ -141,11 +144,12 @@ cc.Class({
         // cc.log("position:",this.init_space + node.height * num + this.base_space * (num));
         return node;
     },
-    scroollCallBack:function(event){
+    scroollCallBack:function(event){//滚动停止监控
         var col = event.detail;
         col.getComponent(cc.ScrollView).content.height = col.getComponent(cc.ScrollView).content.height - this.fantan;
         //关闭监听
         col.node.off('scroll-ended',this.scroollCallBack,this);
+        this.curr_stop_col = col.node.tag;
         if(col.node.tag == 4){
             //展现结果
             this.main.bottom.getComponent("bottomScene").updateWin(this.gameResult.payAmount);
@@ -165,10 +169,11 @@ cc.Class({
             }
             //结束展现
             this.startShow = false;
+            this.curr_stop_col = 0;
         }
     },
     showMessage:function(str){//网络连接错误
-        
+
         cc.log("showMessage",str);
         this.showMessageTxt = str;
         var loadShowMessage = this.loadShowMessage.bind(this);
@@ -187,7 +192,7 @@ cc.Class({
         //更改开始按钮状态
         this.main.bottom.getComponent("bottomScene").changeState(0);
     },
-    httpResp:function(resp){
+    httpResp:function(resp){//协议回调
         cacheManager.initPlayerInfo(resp.playerInfo);
         this.main.updatePlayer();
         //赋值spin的结果
@@ -246,6 +251,13 @@ cc.Class({
         this.isAuto = true;
         this.total_time = 0;
         this.isSend = false;
+    },
+    fastStop:function(){//快速停止
+        var baseTime = 0.1;
+        for(var i = this.curr_stop_col + 1;i <= 4;++i){
+            var timec = baseTime * i;
+            this.col[i].getComponent(cc.ScrollView).scrollToPercentVertical(1,timec,false);
+        }
     },
     clearAuto:function(){
         this.isAuto = false;

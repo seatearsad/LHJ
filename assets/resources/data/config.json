@@ -3,5 +3,5 @@
     "productId":"P1006",
     "channelId":"N1000",
     "secretKey":"1006",
-    "requestUrl":"http://127.0.0.1:8080/account/service"
+    "requestUrl":"http://122.114.52.25:8080/account/service"
 }
