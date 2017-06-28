@@ -40,7 +40,9 @@ cc.Class({
             }
         }else{
             cacheManager.initPlayerInfo(resp.info);
-            this.main.updatePlayer();
+            cacheManager.playerInfo.loginKey = resp.loginKey;
+            
+            // this.main.updatePlayer();
             this.main.removeLoading();
         }
     }

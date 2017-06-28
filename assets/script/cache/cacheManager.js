@@ -3,6 +3,7 @@ var user = require("userInfo");
 var player = require("playerInfo");
 window.cacheManager = {
     main:null,
+    isInit:false,
     // symbol:[],
     gameLevelList:[],
     language:{},
@@ -13,6 +14,7 @@ window.cacheManager = {
         cc.loader.loadRes(dataList.language,this.loadLanguage);
         cc.loader.loadRes(dataList.gameLevelData,this.loadGameLevelList);
         // cc.loader.loadRes(dataList.symbol_1,this.loadSymbol);
+        cacheManager.isInit = true;
     },
     loadGameLevelList:function(err,res){
         initDataHelp.dataCreate(res,0);

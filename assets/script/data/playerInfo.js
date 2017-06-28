@@ -12,6 +12,7 @@ module.exports = {
         this.free_times = obj.free_times;
         this.level_bet = obj.level_bet;
         this.level_line = obj.level_line;
+        this.loginKey;
 
         return this;
     }

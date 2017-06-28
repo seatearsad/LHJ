@@ -14,6 +14,9 @@ cc.Class({
         line_label:cc.Label,
         bet_label:cc.Label,
         auto_list:cc.Node,
+        line_bg:cc.Node,
+        bet_bg:cc.Node,
+        // line_list:cc.ScrollView,
         win_num:0,
         bet_num:1
     },
@@ -34,13 +37,21 @@ cc.Class({
         this.auto_list.opacity = 0;
         this.auto_list.zIndex = this.auto_btn.node.zIndex - 1;
 
+        this.line_show = false;
+        this.bet_show = false;
+
         cc.loader.loadRes("pre/auto_num_btn", loadAutoList);
     },
     startGame:function(){
         cc.log("start game!");
-        this.main.jackpot.getComponent("slotScene").startSlots();
-        this.changeState(1);
-        this.stop_btn.node.on("click",this.stopSpin,this);
+        if(cacheManager.playerInfo.free_times[this.main.gameLevelId].free > 0){//如果停止了免费旋转
+            this.main.jackpot.getComponent("slotScene").freeStart();
+            this.startFree();
+        }else{
+            this.main.jackpot.getComponent("slotScene").startSlots();
+            this.changeState(1);
+            this.stop_btn.node.on("click",this.stopSpin,this);
+        }
     },
     autoCallBack:function(){
         if(this.auto_show){
@@ -62,6 +73,58 @@ cc.Class({
     btnCallBack:function(event){
        var btn = event.detail;
        cc.log(btn.name);
+
+       if(btn.name == "line_btn<Button>"){
+           if(this.bet_show){
+                this.bet_show = false;
+                this.select_scroll.removeFromParent();
+                this.bet_bg.y = 81;
+           }
+           
+           if(this.line_show){
+               this.line_show = false;
+               this.select_scroll.removeFromParent();
+               this.line_bg.y = 81;
+           }else{
+               this.line_show = true;
+           }
+       }else if(btn.name == "bet_btn<Button>"){
+           if(this.line_show){
+                this.line_show = false;
+                this.select_scroll.removeFromParent();
+                this.line_bg.y = 81;
+           }
+           
+           if(this.bet_show){
+               this.bet_show = false;
+               this.select_scroll.removeFromParent();
+               this.bet_bg.y = 81;
+           }else{
+               this.bet_show = true;
+           }
+       }
+       if(this.line_show || this.bet_show){
+            var testLoadScroll = this.testLoadScroll.bind(this);
+            cc.loader.loadRes("pre/select_bg",testLoadScroll);
+       }
+    },
+    testLoadScroll:function(err,res){
+        this.select_scroll = cc.instantiate(res);
+        this.select_scroll.y = 30;
+
+        if(this.line_show){
+            this.line_btn.node.addChild(this.select_scroll);
+            this.line_bg.y =  this.select_scroll.height + this.line_bg.height/2 + 15;
+        }else if(this.bet_show){
+            this.bet_btn.node.addChild(this.select_scroll);
+            this.bet_bg.y = this.select_scroll.height + this.bet_bg.height/2 + 15;
+        }
+        
+        this.loadBottomData();
+    },
+    loadBottomData:function(){
+        var loadLineBetList = this.loadLineBetList.bind(this);
+        cc.loader.loadRes("pre/line_bet_btn",loadLineBetList);
     },
     loadAutoList:function(err,res){
         this.buttonPre = res;
@@ -80,12 +143,85 @@ cc.Class({
             num_btn.position = cc.v2(0, hh);
         }
     },
+    loadLineBetList:function(err,res){
+        var allLineNum = cacheManager.gameLevelList[this.main.gameLevelId].line;
+        var betArr = cacheManager.gameLevelList[this.main.gameLevelId].bet;
+        var buttonPre = res;
+        var content = this.select_scroll.getComponentInChildren(cc.ScrollView).content;
+        
+        var base_space = 2;
+
+        if(this.line_show){
+            for(var i=allLineNum;i > 0;i--){
+                var num_btn = cc.instantiate(buttonPre);
+                var height = num_btn.height;
+                num_btn.on("click",this.changeLineNum,this);
+
+                num_btn.getComponentInChildren(cc.Label).string = i;
+                content.addChild(num_btn);
+
+                var hh = -(height + base_space) * (allLineNum - i) - base_space;
+                num_btn.position = cc.v2(0, hh);
+            }
+            content.height = (height + base_space) * allLineNum + base_space;
+        }
+
+        if(this.bet_show){
+            for(var i=betArr.length-1;i >= 0;i--){
+                var num_btn = cc.instantiate(buttonPre);
+                var height = num_btn.height;
+                num_btn.on("click",this.changeBetNum,this);
+
+                num_btn.getComponentInChildren(cc.Label).string = betArr[i];
+                
+                content.addChild(num_btn);
+
+                var hh = -(height + base_space) * (betArr.length - i - 1) - base_space;
+                num_btn.position = cc.v2(0, hh);
+            }
+            content.height = (height + base_space) * betArr.length + base_space;
+        }
+
+        
+    },
+    changeLineNum:function(event){
+        var btn = event.detail;
+        var num = btn.node.getComponentInChildren(cc.Label).string;
+        this.line_label.string = num;
+
+        this.line_show = false;
+        this.select_scroll.removeFromParent();
+        this.line_bg.y = 81;
+
+        var send = {"levelId":this.main.gameLevelId,"line":num};
+        message.sendData(messageDefine.levelLine,send,this);
+    },
+    changeBetNum:function(event){
+        var btn = event.detail;
+        var num = btn.node.getComponentInChildren(cc.Label).string;
+        this.bet_label.string = num;
+        
+        this.bet_show = false;
+        this.select_scroll.removeFromParent();
+        this.bet_bg.y = 81;
+        
+        var send = {"levelId":this.main.gameLevelId,"bet":num};
+        message.sendData(messageDefine.levelBet,send,this);
+    },
+    httpResp:function(resp){
+        cacheManager.initPlayerInfo(resp.info);
+        this.main.updatePlayer();
+    },
     clickAutoNum:function(event){
         var btn = event.detail;
         var num = btn.node.getComponentInChildren(cc.Label).string;
         cacheManager.auto_times = num;
 
         this.autoCallBack();
+
+        this.startAuto();
+    },
+    startAuto:function(){
         this.main.top.getComponent("topScene").show_uppop(0);
 
         this.main.jackpot.getComponent("slotScene").autoStart();
@@ -94,6 +230,13 @@ cc.Class({
         this.changeState(1);
 
         this.stop_btn.node.on("click",this.stopAuto,this);
+    },
+    startFree:function(){
+        //处理开始按钮的样式
+        this.changeState(1);
+        this.stop_btn.node.off("click",this.stopAuto,this);
+        this.stop_btn.node.off("click",this.stopSpin,this);
+        this.stop_btn.node.on("click",this.stopFree,this);
     },
     changeState:function(stat){//stat 0 结束 1 开始
         if(stat == 1){
@@ -112,6 +255,11 @@ cc.Class({
     stopSpin:function(){
         this.stop_btn.node.off("click",this.stopSpin,this);
         this.main.jackpot.getComponent("slotScene").fastStop();
+    },
+    stopFree:function(){
+        this.stop_btn.node.off("click",this.stopFree,this);
+        this.changeState(0);
+        this.main.jackpot.getComponent("slotScene").clearFree();
     },
     updatePlayer:function(){
         var playerInfo = cacheManager.playerInfo;

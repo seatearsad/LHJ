@@ -24,15 +24,26 @@ cc.Class({
         this.base_space = 12;
         this.init_space = 8;
         this.end_space = 4;
-        //控制自动旋转的参数
+        //控制自动旋转的参数 免费旋转
         this.isAuto = false;
+        this.isFree = false;
         this.total_time = 0;
 
         //当前已经停止列数
         this.curr_stop_col = 0;
+
+        //加载线资源
+        var lineNum = cacheManager.gameLevelList[this.main.gameLevelId].line;
+        var line_url = "pre/line_" + lineNum;
+        var loadLine = this.loadLine.bind(this);
+        cc.loader.loadRes(line_url, loadLine);
     },
     emptyFunc:function (event) {
         event.stopPropagation();
+    },
+    loadLine:function(err,res){
+        this.line_total = cc.instantiate(res);
+        this.node.addChild(this.line_total);
     },
     loadAll:function(){
         //先加载图标资源
@@ -97,7 +108,7 @@ cc.Class({
             // cc.log("inertia",this.col[i].getComponent(cc.ScrollView).inertia);
         }
         //使遮挡层在最上面
-        this.cover.zIndex = index_c + 1;
+        this.cover.zIndex = index_c + 2;
     },
     addSymbol:function(col){
         var test_num = 0;
@@ -153,6 +164,27 @@ cc.Class({
         if(col.node.tag == 4){
             //展现结果
             this.main.bottom.getComponent("bottomScene").updateWin(this.gameResult.payAmount);
+            //所赢数值展现
+            if(this.gameResult.payAmount > 0){
+                this.main.showWinNum(this.gameResult.payAmount);
+            }
+            
+            if(this.isFree){
+                if(cacheManager.playerInfo.free_times[this.main.gameLevelId].free <= 0){
+                    this.isFree = false;
+                    this.main.bottom.getComponent("bottomScene").stopFree();
+                    this.main.top.getComponent("topScene").hidden_uppop();
+                    if(this.nextAuto){
+                        this.main.bottom.getComponent("bottomScene").startAuto();
+                        this.nextAuto = false;
+                    }else{
+                        this.main.bottom.getComponent("bottomScene").changeState(0);
+                    }
+                }else{
+                    this.total_time = 0;
+                    this.isSend = false;    
+                }
+            }
             //开始下一次自动
             if(this.isAuto){
                 // this.main.top.getComponent("topScene").times_label.string = cacheManager.auto_times;
@@ -163,13 +195,38 @@ cc.Class({
                 }else{
                     this.autoStart();
                 }
-            }else{
+            }else if(!this.isFree){
                 //更改开始按钮状态
                 this.main.bottom.getComponent("bottomScene").changeState(0);
             }
             //结束展现
             this.startShow = false;
             this.curr_stop_col = 0;
+            //中奖线展示
+            var winLine = this.gameResult.lineList;
+            var lineArr = new Array();
+            for(var i=0;i<winLine.length;++i){
+                if(winLine[i].lineId >= 0){
+                    lineArr[i]=winLine[i].lineId;
+                }
+            }
+            
+            this.line_total.getComponent("lineManager").showLine(lineArr);
+            //结束后判断是否有免费旋转
+            if(this.gameResult.isWinFree){
+                var lineList = this.gameResult.lineList;
+                for(var i=0;i<lineList.length;++i){
+                    if(lineList[i].lineId == -1){
+                        if(this.isAuto){
+                            this.clearAuto();
+                            this.nextAuto = true;
+                        }
+                        this.freeStart();
+                        this.main.top.getComponent("topScene").show_uppop(1);
+                        this.main.bottom.getComponent("bottomScene").startFree();
+                    }
+                }
+            }
         }
     },
     showMessage:function(str){//网络连接错误
@@ -197,7 +254,12 @@ cc.Class({
         this.main.updatePlayer();
         //赋值spin的结果
         this.gameResult = resp.GameResult;
-
+        //如果是免费的话更新次数
+        if(this.isFree){
+            var currTimes = cacheManager.playerInfo.free_times[this.main.gameLevelId].free;
+            this.main.top.getComponent("topScene").times_label.string = currTimes;
+            
+        }
         this.col_num = 0;
         
         for(var i=0;i < this.total_col;++i){
@@ -244,11 +306,18 @@ cc.Class({
     //     col.getComponent(cc.ScrollView).enabled = false;
     // },
     startSlots:function(){
+        //取消中奖线展示
+        this.line_total.getComponent("lineManager").removeLine(cacheManager.gameLevelList[this.main.gameLevelId].line);
         var send = {};
         message.sendData(messageDefine.game_result,send,this);
     },
     autoStart:function(){
         this.isAuto = true;
+        this.total_time = 0;
+        this.isSend = false;
+    },
+    freeStart:function(){
+        this.isFree = true;
         this.total_time = 0;
         this.isSend = false;
     },
@@ -268,14 +337,23 @@ cc.Class({
             //更改开始按钮状态
             this.main.bottom.getComponent("bottomScene").changeState(0);
     },
+    clearFree:function(){
+        this.isFree = false;
+        this.total_time = 0;
+        this.isSend = true;
+    },
     // called every frame, uncomment this function to activate update callback
     update: function (dt) {
-        if(this.isAuto){
+        if(this.isAuto || this.isFree){
             this.total_time += dt;
             if(this.total_time > 1 && !this.isSend){
-                cacheManager.auto_times--;
+                if(!this.isFree){//不是免费的情况下减少自动次数
+                    cacheManager.auto_times--;
+                    this.main.top.getComponent("topScene").times_label.string = cacheManager.auto_times;
+                }
+
                 this.startSlots();
-                this.main.top.getComponent("topScene").times_label.string = cacheManager.auto_times;
+
                 this.isSend = true;
             }
         }

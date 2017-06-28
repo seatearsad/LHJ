@@ -6,14 +6,16 @@ cc.Class({
         bottom:cc.Node,
         top:cc.Node,
         load:cc.Node,
-        load_txt:cc.Label
+        load_txt:cc.Label,
+        win_bg:cc.Node,
+        occ_bg:cc.Node
     },
 
     // use this for initialization
     onLoad: function () {
         //cache
         cacheManager.main = this;
-        cacheManager.init();
+        // cacheManager.init();
         
         //slotScene
         this.jackpot.getComponent("slotScene").main = this;
@@ -25,14 +27,17 @@ cc.Class({
 
         this.gameLevelId = 0;
 
+        this.loadGameLevel();
+        this.updatePlayer();
         //load
-        // var url = "symbol/icon1";
+        // var url = "symbol/icon_10";
         // var loadCallBack = this.loadCallBack.bind(this);
         // cc.loader.loadRes(url,cc.SpriteFrame,loadCallBack);
     },
     loadGameLevel:function(){
         // this.timeAll = 0;
         this.jackpot.getComponent("slotScene").loadAll();
+        // this.bottom.getComponent("bottomScene").loadBottomData();
     },
     removeLoading:function(){
         this.load.removeFromParent();
@@ -41,6 +46,12 @@ cc.Class({
     updatePlayer:function(){
         this.bottom.getComponent("bottomScene").updatePlayer();
         this.top.getComponent("topScene").updatePlayer();
+    },
+    showWinNum:function(winNum){
+        this.occ_bg.active = true;
+        this.win_bg.active = true;
+        this.win_bg.getComponentInChildren(cc.Label).getComponent("showNum").main = this;
+        this.win_bg.getComponentInChildren(cc.Label).getComponent("showNum").showAdd(Number(winNum));
     },
     loadCallBack:function(err,res){
         // var type = "SpriteFrame";
@@ -63,5 +74,17 @@ cc.Class({
         //     this.isLoad = true;
         //     this.jackpot.getComponent("slotScene").loadAll();
         // }
+        var width = cc.winSize.width;
+        var height = cc.winSize.height;
+        // cc.log(width,height);
+        if(width > height){
+            this.node.rotation = 0;
+            this.node.scale = 1;
+        }else{
+            this.node.rotation = 90;
+            var sca = width/this.node.height;
+
+            this.node.scale = sca;
+        }
     },
 });

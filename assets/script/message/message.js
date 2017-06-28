@@ -1,6 +1,8 @@
+var MD5 = require("md5");
 window.message = {
     m:{},
     callback:null,
+    secretKey:"stolScoRfloW",
     sendData:function(messageId,obj,callback){
         //message.m = new ArrayBuffer();
 
@@ -19,15 +21,26 @@ window.message = {
             case messageDefine.create:
                 dataClass = playerCreateReq;
                 break;
+            case messageDefine.levelLine:
+                dataClass = playerGameLevelLineReq;
+                break;
+            case messageDefine.levelBet:
+                dataClass = playerGameLevelBetReq;
+                break;
             case messageDefine.game_result:
                 dataClass = gameGetResultReq;
                 break;
             default:
                 break;
         }
+        //输入loginkey
+        if(messageId != messageDefine.login && messageId != messageDefine.create){
+            obj.loginKey = cacheManager.playerInfo.loginKey;
+        }
         message.m["sid"] = "1001";
         message.m["data"] = JSON.stringify(dataClass.getData(obj));
-        message.m["sign"] = "abcd";
+        // cc.log("ss",message.m["mid"].toString() + message.m["pid"].toString() + message.m["sid"].toString() + message.m["data"].toString() + message.secretKey);
+        message.m["sign"] = MD5.encrypt(message.m["mid"].toString() + message.m["pid"].toString() + message.m["sid"].toString() + message.m["data"].toString() + message.secretKey);
         var tString = message.ArrayToUrlParam(message.m);
 
         message.callback = callback;
@@ -62,6 +75,12 @@ window.message = {
                 break;
             case messageDefine.create_r:
                 r_class = playerCreateResp;
+                break;
+            case messageDefine.levelLine_r:
+                r_class = playerGameLevelLineResp;
+                break;
+            case messageDefine.levelBet_r:
+                r_class = playerGameLevelBetResp;
                 break;
             case messageDefine.game_result_r:
                 r_class = gameGetResultResp;
