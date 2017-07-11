@@ -18,9 +18,11 @@ cc.Class({
     },
     btnCallBack:function(){
         this.node.removeFromParent();
+        this.parentFun();//返回操作
     },
-    changeTxt:function(str){
+    changeTxt:function(str,callBack){//callBack为弹出框关闭后返回的函数
         this.message_font.string = str;
+        this.parentFun = callBack;
     }
     // called every frame, uncomment this function to activate update callback
     // update: function (dt) {

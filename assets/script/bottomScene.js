@@ -52,6 +52,19 @@ cc.Class({
             this.changeState(1);
             this.stop_btn.node.on("click",this.stopSpin,this);
         }
+        //取消滚动菜单
+        if(this.bet_show){
+            this.bet_show = false;
+            this.select_scroll.removeFromParent();
+            this.bet_bg.y = 81;
+        }
+        if(this.line_show){
+            this.line_show = false;
+            this.select_scroll.removeFromParent();
+            this.line_bg.y = 81;
+        }
+        //取消自动旋转菜单
+        if(this.auto_show) this.autoCallBack();
     },
     autoCallBack:function(){
         if(this.auto_show){
@@ -74,7 +87,7 @@ cc.Class({
        var btn = event.detail;
        cc.log(btn.name);
 
-       if(btn.name == "line_btn<Button>"){
+       if(btn.name == "line_btn<Button>"){//选择线数
            if(this.bet_show){
                 this.bet_show = false;
                 this.select_scroll.removeFromParent();
@@ -88,7 +101,7 @@ cc.Class({
            }else{
                this.line_show = true;
            }
-       }else if(btn.name == "bet_btn<Button>"){
+       }else if(btn.name == "bet_btn<Button>"){//选择下注数
            if(this.line_show){
                 this.line_show = false;
                 this.select_scroll.removeFromParent();
@@ -102,6 +115,14 @@ cc.Class({
            }else{
                this.bet_show = true;
            }
+       }else if(btn.name == "max_bet_btn<Button>"){//最大赌注
+           var betArr = cacheManager.gameLevelList[this.main.gameLevelId].bet;
+           var maxBet = betArr[betArr.length - 1];
+
+           var send = {"levelId":this.main.gameLevelId,"bet":maxBet};
+           message.sendData(messageDefine.levelBet,send,this);
+
+           this.startGame();
        }
        if(this.line_show || this.bet_show){
             var testLoadScroll = this.testLoadScroll.bind(this);
@@ -193,6 +214,14 @@ cc.Class({
         this.select_scroll.removeFromParent();
         this.line_bg.y = 81;
 
+        var lineArr = new Array();
+        for(var i=0;i<num;++i){
+            lineArr[i]=i;
+        }
+        var line_m = this.main.jackpot.getComponent("slotScene").line_total.getComponent("lineManager");
+        line_m.removeLine(cacheManager.gameLevelList[this.main.gameLevelId].line);
+        line_m.getComponent("lineManager").showLine(lineArr);
+
         var send = {"levelId":this.main.gameLevelId,"line":num};
         message.sendData(messageDefine.levelLine,send,this);
     },
@@ -220,6 +249,17 @@ cc.Class({
         this.autoCallBack();
 
         this.startAuto();
+        //取消滚动菜单
+        if(this.bet_show){
+            this.bet_show = false;
+            this.select_scroll.removeFromParent();
+            this.bet_bg.y = 81;
+        }
+        if(this.line_show){
+            this.line_show = false;
+            this.select_scroll.removeFromParent();
+            this.line_bg.y = 81;
+        }
     },
     startAuto:function(){
         this.main.top.getComponent("topScene").show_uppop(0);
@@ -245,6 +285,23 @@ cc.Class({
         }else{
             this.start_btn.node.active = true;
             this.stop_btn.node.active = false;
+        }
+        //改变其他按钮的状态
+        this.disableBtn(stat);
+    },
+    disableBtn:function(stat){
+        if(stat == 1){
+            this.info_btn.interactable = false;
+            this.max_bet_btn.interactable = false;
+            this.auto_btn.interactable = false;
+            this.line_btn.interactable = false;
+            this.bet_btn.interactable = false;
+        }else{
+            this.info_btn.interactable = true;
+            this.max_bet_btn.interactable = true;
+            this.auto_btn.interactable = true;
+            this.line_btn.interactable = true;
+            this.bet_btn.interactable = true;
         }
     },
     stopAuto:function(){

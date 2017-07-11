@@ -28,8 +28,8 @@ cc.Class({
     getGameServer:function(){
         getServer.getServer(this);
     },
-    showMessage:function(){
-        this.main.load_txt.string = cacheManager.language["netError"];
+    showMessage:function(str){
+        this.main.load_txt.string = cacheManager.language[str];
     },
     httpResp:function(resp){
         // this.main.removeLoading();

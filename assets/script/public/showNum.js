@@ -17,7 +17,7 @@ cc.Class({
         this.totalTime = 0;
         this.baseTime = 0.1;
         this.isEnd = false;
-        this.baseAdd = Math.ceil(num/100); 
+        this.baseAdd = Math.ceil(num/61); 
     },
     // called every frame, uncomment this function to activate update callback
     update: function (dt) {
@@ -36,6 +36,7 @@ cc.Class({
         if(this.totalTime > 1 && this.isEnd){
             this.node.parent.active = false;
             this.main.occ_bg.active = false;
+            this.main.isShowAddWinNum = false;
         }
     }
 });

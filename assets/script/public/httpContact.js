@@ -24,7 +24,7 @@ window.httpContact = {
 		}
 		xhr.onerror = function(){//网络连接失败时调用
 			//到调用页面显示错误消息
-			backclass.callback.showMessage("httpError!");
+			backclass.callback.showMessage("netError");
 		}
     }
 }

@@ -23,6 +23,7 @@ cc.Class({
         //监听游戏进入后台
         cc.game.on(cc.game.EVENT_HIDE,this.gameHide);
         //监听按键
+        this.isExit = false;
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
         //监听移动
         this.isFan = false;
@@ -38,8 +39,16 @@ cc.Class({
     gameHide:function(){
         cc.log("gameHide");
     },
-    onKeyDown:function(event){
-        cc.log(event.keyCode,cc.KEY.back);
+    onKeyDown:function(event){//退出游戏
+        if(event.keyCode == cc.KEY.back){
+            if(!this.isExit){
+                this.showMessage("exit_game");
+                this.isExit = true;
+            }else{
+                cc.director.end();
+            }
+            
+        } 
     },
     loadGameLevel:function(){
         this.removeLoading();
@@ -47,6 +56,26 @@ cc.Class({
     removeLoading:function(){
         this.load.removeFromParent();
         this.load_txt.node.removeFromParent();
+    },
+    showMessage:function(str){
+        this.showMessageTxt = cacheManager.language[str];
+        var loadShowMessage = this.loadShowMessage.bind(this);
+        cc.loader.loadRes("pre/showMessage", loadShowMessage);
+    },
+    loadShowMessage:function(err,prefab){
+        var showMessageNode = cc.instantiate(prefab);
+        var changeExit = this.changeExit.bind(this);
+        showMessageNode.getComponent("showMessage").changeTxt(this.showMessageTxt,changeExit);
+        this.node.parent.addChild(showMessageNode);
+        var seq = cc.sequence(
+            cc.fadeIn(0.2),
+            cc.scaleTo(0.2,1.05),
+            cc.scaleTo(0.1,1)
+        )
+        showMessageNode.runAction(seq);
+    },
+    changeExit:function(){
+        this.isExit = false;
     },
     // called every frame, uncomment this function to activate update callback
     update: function (dt) {

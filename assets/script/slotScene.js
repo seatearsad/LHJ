@@ -163,6 +163,7 @@ cc.Class({
         this.curr_stop_col = col.node.tag;
         if(col.node.tag == 4){
             //展现结果
+            this.main.updatePlayer();
             this.main.bottom.getComponent("bottomScene").updateWin(this.gameResult.payAmount);
             //所赢数值展现
             if(this.gameResult.payAmount > 0){
@@ -202,16 +203,7 @@ cc.Class({
             //结束展现
             this.startShow = false;
             this.curr_stop_col = 0;
-            //中奖线展示
-            var winLine = this.gameResult.lineList;
-            var lineArr = new Array();
-            for(var i=0;i<winLine.length;++i){
-                if(winLine[i].lineId >= 0){
-                    lineArr[i]=winLine[i].lineId;
-                }
-            }
             
-            this.line_total.getComponent("lineManager").showLine(lineArr);
             //结束后判断是否有免费旋转
             if(this.gameResult.isWinFree){
                 var lineList = this.gameResult.lineList;
@@ -227,18 +219,29 @@ cc.Class({
                     }
                 }
             }
+
+            //中奖线展示
+            var winLine = this.gameResult.lineList;
+            var lineArr = new Array();
+            for(var i=0;i<winLine.length;++i){
+                if(winLine[i].lineId >= 0){
+                    lineArr[i]=winLine[i].lineId;
+                }
+            }
+            
+            this.line_total.getComponent("lineManager").showLine(lineArr);
         }
     },
     showMessage:function(str){//网络连接错误
 
         cc.log("showMessage",str);
-        this.showMessageTxt = str;
+        this.showMessageTxt = cacheManager.language[str];
         var loadShowMessage = this.loadShowMessage.bind(this);
         cc.loader.loadRes("pre/showMessage", loadShowMessage);
     },
     loadShowMessage:function(err,prefab){
         var showMessageNode = cc.instantiate(prefab);
-        showMessageNode.getComponent("showMessage").changeTxt(cacheManager.language["netError"]);
+        showMessageNode.getComponent("showMessage").changeTxt(this.showMessageTxt);
         this.main.node.addChild(showMessageNode);
         var seq = cc.sequence(
             cc.fadeIn(0.2),
@@ -251,54 +254,63 @@ cc.Class({
     },
     httpResp:function(resp){//协议回调
         cacheManager.initPlayerInfo(resp.playerInfo);
-        this.main.updatePlayer();
+        //this.main.updatePlayer();
+        this.main.bottom.getComponent("bottomScene").updatePlayer();
         //赋值spin的结果
         this.gameResult = resp.GameResult;
-        //如果是免费的话更新次数
-        if(this.isFree){
-            var currTimes = cacheManager.playerInfo.free_times[this.main.gameLevelId].free;
-            this.main.top.getComponent("topScene").times_label.string = currTimes;
+        //更新用户下注后的金额
+        this.main.top.getComponent("topScene").cash_label.string = this.main.top.getComponent("topScene").cash_label.string - this.gameResult.betAmount;
+        //金额不足
+        if(!this.gameResult.isEnough){
+            //提示框+改变按钮状态
+            this.showMessage("amout_need");
+        }else{
+            //如果是免费的话更新次数
+            if(this.isFree){
+                var currTimes = cacheManager.playerInfo.free_times[this.main.gameLevelId].free;
+                this.main.top.getComponent("topScene").times_label.string = currTimes;
+            }
+            this.col_num = 0;
             
-        }
-        this.col_num = 0;
-        
-        for(var i=0;i < this.total_col;++i){
-            var showReel=resp.GameResult.showReel[i];
-            var content = this.col[i].getComponent(cc.ScrollView).content;
-            var num = this.symbolNum[i];
-            var child = this.col[i].getComponent(cc.ScrollView).content.getComponentsInChildren(cc.Sprite).length;
-            
-            if(child > num){
-                for(var k=1;k < 4;++k){
-                    var child_arr = this.col[i].getComponent(cc.ScrollView).content.getComponentsInChildren(cc.Sprite);
-                    var t_num = child_arr.length - 1;
-                    var t_child = child_arr[t_num].node.removeFromParent();
+            for(var i=0;i < this.total_col;++i){
+                var showReel=resp.GameResult.showReel[i];
+                var content = this.col[i].getComponent(cc.ScrollView).content;
+                var num = this.symbolNum[i];
+                var child = this.col[i].getComponent(cc.ScrollView).content.getComponentsInChildren(cc.Sprite).length;
+                
+                if(child > num){
+                    for(var k=1;k < 4;++k){
+                        var child_arr = this.col[i].getComponent(cc.ScrollView).content.getComponentsInChildren(cc.Sprite);
+                        var t_num = child_arr.length - 1;
+                        var t_child = child_arr[t_num].node.removeFromParent();
+                    }
                 }
+
+                // cc.log(num,child);
+                // var node = this.addSymbolOne(num,this.symbolRes[0].res);
+                // content.addChild(node);
+                var pos = 0;
+                for(var j=(showReel.length - 1);j >= 0;--j){
+                    var id = showReel[j];
+                    var addNum = num + pos;
+                    var node = this.addSymbolOne(addNum,this.symbolRes[id].res);
+                    content.addChild(node);
+
+                    pos++;
+                }
+                var timeL = this.standard_time*(i + 1);
+                content.y = 0;
+                content.height += this.fantan;
+                // this.col[i].getComponent(cc.ScrollView).enabled = true;
+                this.col[i].getComponent(cc.ScrollView).scrollToPercentVertical(1,timeL,false);
+                //绑定监听
+                this.col[i].on('scroll-ended',this.scroollCallBack,this);
+                // this.col[i].getComponent(cc.ScrollView).scrollToPercentVertical(0.99,true);
+
+                this.startShow = true;
             }
-
-            // cc.log(num,child);
-            // var node = this.addSymbolOne(num,this.symbolRes[0].res);
-            // content.addChild(node);
-            var pos = 0;
-            for(var j=(showReel.length - 1);j >= 0;--j){
-                var id = showReel[j];
-                var addNum = num + pos;
-                var node = this.addSymbolOne(addNum,this.symbolRes[id].res);
-                content.addChild(node);
-
-                pos++;
-            }
-            var timeL = this.standard_time*(i + 1);
-            content.y = 0;
-            content.height += this.fantan;
-            // this.col[i].getComponent(cc.ScrollView).enabled = true;
-            this.col[i].getComponent(cc.ScrollView).scrollToPercentVertical(1,timeL,false);
-            //绑定监听
-            this.col[i].on('scroll-ended',this.scroollCallBack,this);
-            // this.col[i].getComponent(cc.ScrollView).scrollToPercentVertical(0.99,true);
-
-            this.startShow = true;
         }
+        
     },
     // scroollTouchCallBack:function(event){
     //     cc.log("touch");
@@ -347,14 +359,17 @@ cc.Class({
         if(this.isAuto || this.isFree){
             this.total_time += dt;
             if(this.total_time > 1 && !this.isSend){
-                if(!this.isFree){//不是免费的情况下减少自动次数
-                    cacheManager.auto_times--;
-                    this.main.top.getComponent("topScene").times_label.string = cacheManager.auto_times;
+                // cc.log(this.main.isShowAddWinNum);
+                //赢钱的展示结束后再进行下一次
+                if(!this.main.isShowAddWinNum){
+                    if(!this.isFree){//不是免费的情况下减少自动次数
+                        cacheManager.auto_times--;
+                        this.main.top.getComponent("topScene").times_label.string = cacheManager.auto_times;
+                    }
+
+                    this.startSlots();
+                    this.isSend = true;
                 }
-
-                this.startSlots();
-
-                this.isSend = true;
             }
         }
     },

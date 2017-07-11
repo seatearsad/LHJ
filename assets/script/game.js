@@ -29,6 +29,8 @@ cc.Class({
 
         this.loadGameLevel();
         this.updatePlayer();
+
+        this.isShowAddWinNum = false;
         //load
         // var url = "symbol/icon_10";
         // var loadCallBack = this.loadCallBack.bind(this);
@@ -52,6 +54,8 @@ cc.Class({
         this.win_bg.active = true;
         this.win_bg.getComponentInChildren(cc.Label).getComponent("showNum").main = this;
         this.win_bg.getComponentInChildren(cc.Label).getComponent("showNum").showAdd(Number(winNum));
+
+        this.isShowAddWinNum = true;
     },
     loadCallBack:function(err,res){
         // var type = "SpriteFrame";

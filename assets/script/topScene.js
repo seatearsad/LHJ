@@ -13,6 +13,7 @@ cc.Class({
     onLoad: function () {
         this.uppop.opacity = 0;
         this.back_btn.node.on('click',this.backMain,this);
+        this.showLabel = false;
     },
     show_uppop:function(stat){
         //stat 0 auto 1 free
@@ -27,10 +28,12 @@ cc.Class({
 
         var seq = cc.fadeIn(0.5);
         this.uppop.runAction(seq);
+        this.showLabel = true;
     },
     hidden_uppop:function(){
         var seq = cc.fadeOut(0.5);
         this.uppop.runAction(seq);
+        this.showLabel = false;
     },
     backMain:function(){
         cc.director.preloadScene("main", function () {
